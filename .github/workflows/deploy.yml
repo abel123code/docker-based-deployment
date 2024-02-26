@@ -12,8 +12,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Zip the project
-      run: zip -r project.zip .
+    - name: Archive the project
+      run: tar -czvf project.tar.gz .
 
     - name: Copy project to EC2
       uses: appleboy/scp-action@master
@@ -22,8 +22,8 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
-        source: "project.zip"
-        target: "/home/${{ secrets.EC2_USER }}/project.zip"
+        source: "project.tar.gz"
+        target: "/home/${{ secrets.EC2_USER }}/project.tar.gz"
 
     - name: Cleanup, Install, and Deploy
       uses: appleboy/ssh-action@master
@@ -40,8 +40,9 @@ jobs:
           # Remove previous deployment directory
           rm -rf /home/${{ secrets.EC2_USER }}/deployment_directory/
           
-          # Unzip the new deployment
-          unzip -o project.zip -d /home/${{ secrets.EC2_USER }}/deployment_directory/
+          # Extract the new deployment
+          mkdir -p /home/${{ secrets.EC2_USER }}/deployment_directory/
+          tar -xzvf /home/${{ secrets.EC2_USER }}/project.tar.gz -C /home/${{ secrets.EC2_USER }}/deployment_directory/
           
           # Navigate to the deployment directory
           cd /home/${{ secrets.EC2_USER }}/deployment_directory/
@@ -65,4 +66,3 @@ jobs:
           # List active Docker containers to verify successful deployment
           echo "Listing active Docker containers..."
           sudo docker ps
-
