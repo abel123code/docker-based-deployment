@@ -12,8 +12,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Archive the project
-      run: tar -czvf project.tar.gz --exclude='.git' .
+    - name: Archive specific project components
+      run: tar -czvf project.tar.gz backend/ frontend/ docker-compose.yml
+
 
 
     - name: Copy project to EC2
