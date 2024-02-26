@@ -1,0 +1,68 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main # Adjust to your deployment branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Zip the project
+      run: zip -r project.zip .
+
+    - name: Copy project to EC2
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        source: "project.zip"
+        target: "/home/${{ secrets.EC2_USER }}/project.zip"
+
+    - name: Cleanup, Install, and Deploy
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          # Stop and remove all Docker containers
+          docker stop $(docker ps -aq)
+          docker rm $(docker ps -aq)
+          
+          # Remove previous deployment directory
+          rm -rf /home/${{ secrets.EC2_USER }}/deployment_directory/
+          
+          # Unzip the new deployment
+          unzip -o project.zip -d /home/${{ secrets.EC2_USER }}/deployment_directory/
+          
+          # Navigate to the deployment directory
+          cd /home/${{ secrets.EC2_USER }}/deployment_directory/
+          
+          # Check if Docker and Docker Compose are installed, install if not
+          if ! command -v docker &> /dev/null
+          then
+              sudo apt-get update
+              sudo apt-get install -y docker.io
+          fi
+          
+          if ! command -v docker-compose &> /dev/null
+          then
+              sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+          fi
+          
+          # Start the application with Docker Compose
+          docker-compose up --build -d
+
+          # List active Docker containers to verify successful deployment
+          echo "Listing active Docker containers..."
+          sudo docker ps
+
