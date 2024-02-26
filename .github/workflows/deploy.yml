@@ -23,7 +23,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         source: "project.tar.gz"
-        target: "/home/${{ secrets.EC2_USER }}/deployment_directory/"
+        target: "/home/${{ secrets.EC2_USER }}"
 
     - name: Cleanup, Install, and Deploy
       uses: appleboy/ssh-action@master
@@ -42,22 +42,25 @@ jobs:
           docker ps -aq | xargs -r docker rm
           
           # Remove previous deployment directory
-          rm -rf /home/${{ secrets.EC2_USER }}/deployment_directory/
+          rm -rf /home/${{ secrets.EC2_USER }}/deploy/
           
           # Debugging: Confirm directory removal
           echo "Listing /home/${{ secrets.EC2_USER }}/ contents after cleanup..."
           ls -lah /home/${{ secrets.EC2_USER }}/
           
+          # Create the deploy directory and move the tar file into it
+          mkdir -p /home/${{ secrets.EC2_USER }}/deploy/
+          mv /home/${{ secrets.EC2_USER }}/project.tar.gz /home/${{ secrets.EC2_USER }}/deploy/
+          
           # Extract the new deployment
-          mkdir -p /home/${{ secrets.EC2_USER }}/deployment_directory/
-          tar -xzvf /home/${{ secrets.EC2_USER }}/deployment_directory/project.tar.gz -C /home/${{ secrets.EC2_USER }}/deployment_directory/
+          tar -xzvf /home/${{ secrets.EC2_USER }}/deploy/project.tar.gz -C /home/${{ secrets.EC2_USER }}/deploy/
           
-          # Debugging: List deployment_directory contents after extraction
-          echo "Listing /home/${{ secrets.EC2_USER }}/deployment_directory/ contents after extraction..."
-          ls -lah /home/${{ secrets.EC2_USER }}/deployment_directory/
+          # Debugging: List deploy directory contents after extraction
+          echo "Listing /home/${{ secrets.EC2_USER }}/deploy/ contents after extraction..."
+          ls -lah /home/${{ secrets.EC2_USER }}/deploy/
           
-          # Navigate to the deployment directory
-          cd /home/${{ secrets.EC2_USER }}/deployment_directory/
+          # Navigate to the deploy directory
+          cd /home/${{ secrets.EC2_USER }}/deploy/
           
           # Check if Docker and Docker Compose are installed, install if not
           if ! command -v docker &> /dev/null
@@ -82,7 +85,8 @@ jobs:
           
           # Start the application with Docker Compose
           docker-compose up --build -d
-
+        
           # List active Docker containers to verify successful deployment
           echo "Listing active Docker containers..."
           sudo docker ps
+
