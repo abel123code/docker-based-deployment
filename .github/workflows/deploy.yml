@@ -43,7 +43,7 @@ jobs:
           
           # Extract the new deployment
           mkdir -p /home/${{ secrets.EC2_USER }}/deployment_directory/
-          tar -xzvf /home/${{ secrets.EC2_USER }}/project.tar.gz -C /home/${{ secrets.EC2_USER }}/deployment_directory/
+          tar -xzvf /home/${{ secrets.EC2_USER }}/deployment_directory/project.tar.gz -C /home/${{ secrets.EC2_USER }}/deployment_directory/
           
           # Navigate to the deployment directory
           cd /home/${{ secrets.EC2_USER }}/deployment_directory/
